@@ -1,0 +1,1161 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#1e293b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="سامانه محافظت‌شده بررسی وضعیت IP عمومی و پینگ به سرورهای VPN">
+<title>سامانه بررسی وضعیت IP و شبکه VPN</title>
+<style>
+:root {
+  --clr-bg: #f1f5f9;
+  --clr-panel: #fff;
+  --clr-border: #e2e8f0;
+  --clr-text: #0f172a;
+  --clr-muted: #64748b;
+  --clr-accent: #1e293b;
+  --clr-good: #16a34a;
+  --clr-bad: #dc2626;
+  --clr-warn: #d97706;
+  font-family: Tahoma, "Segoe UI", -apple-system, sans-serif;
+  color: var(--clr-text);
+  background: var(--clr-bg);
+  text-rendering: optimizeLegibility;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { padding: 18px 14px 48px; line-height: 1.7; min-height: 100vh; }
+.wrap { max-width: 780px; margin: auto; }
+
+/* Login Screen Styles */
+.login-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 14px;
+}
+.login-card {
+  background: var(--clr-panel);
+  border: 1px solid var(--clr-border);
+  border-radius: 20px;
+  padding: 32px 24px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(15,23,42,.08);
+  text-align: center;
+}
+.login-icon {
+  font-size: 2.8rem;
+  margin-bottom: 12px;
+  display: inline-block;
+  background: #f1f5f9;
+  width: 72px;
+  height: 72px;
+  line-height: 72px;
+  border-radius: 50%;
+}
+.login-card h2 {
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+.login-input-wrap {
+  position: relative;
+  margin-bottom: 14px;
+}
+.login-input-wrap input {
+  padding-left: 42px !important;
+}
+.toggle-eye {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #64748b;
+  padding: 4px;
+}
+.login-error {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: .84rem;
+  animation: shake 0.3s ease;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+/* App Header & Logout */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.logout-btn {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+}
+.logout-btn:hover { background: #fecaca; }
+
+/* Panels */
+.panel { background: var(--clr-panel); border: 1px solid var(--clr-border); border-radius: 18px; padding: 22px; margin-bottom: 14px; box-shadow: 0 4px 18px rgba(15,23,42,.05); }
+h1 { font-size: 1.35rem; margin-bottom: 8px; }
+h2 { font-size: 1.05rem; margin-bottom: 14px; color: #1e293b; }
+p { color: var(--clr-muted); margin-bottom: 8px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; background: #e2e8f0; color: #334155; padding: 3px 10px; border-radius: 20px; font-size: .8rem; font-weight: 700; margin-bottom: 10px; }
+
+/* Controls */
+.controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.btn { border: 0; border-radius: 10px; padding: 11px 18px; font: inherit; font-weight: 700; cursor: pointer; background: var(--clr-accent); color: #fff; transition: background .15s, opacity .15s; }
+.btn:hover { background: #334155; }
+.btn.secondary { background: #e2e8f0; color: #0f172a; }
+.btn.secondary:hover { background: #cbd5e1; }
+.btn:disabled { opacity: .55; cursor: wait; }
+input[type=text], input[type=password] { font: inherit; padding: 11px 14px; border: 1px solid var(--clr-border); border-radius: 10px; direction: ltr; text-align: left; font-size: 1.05rem; width: 100%; }
+input[type=text]:focus, input[type=password]:focus { outline: 2px solid #3b82f6; border-color: transparent; }
+label { display: block; font-weight: 700; margin: 14px 0 7px; }
+
+/* IP Status Indicator (top pill) */
+.quick-status { font-size: 1.5rem; display: inline-flex; align-items: center; user-select: none; padding: 0 4px; cursor: default; }
+
+/* Info grid */
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.datum { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; }
+.datum .k { color: var(--clr-muted); font-size: .84rem; margin-bottom: 6px; }
+.datum .v { font-size: 1.05rem; font-weight: 700; overflow-wrap: anywhere; direction: ltr; text-align: right; }
+
+/* Status boxes */
+.status-box { border-radius: 14px; padding: 18px; margin-top: 14px; border: 1.5px solid var(--clr-border); background: #f8fafc; transition: border-color .2s, background .2s; }
+.status-box .heading { font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+.status-box p { color: #1e293b; margin-top: 8px; margin-bottom: 0; }
+.status-box.good { border-color: #86efac; background: #f0fdf4; }
+.status-box.bad { border-color: #fca5a5; background: #fef2f2; }
+.status-box.unknown { border-color: #fde047; background: #fefce8; }
+.status-box.untested { border-color: var(--clr-border); background: #f8fafc; }
+
+/* Action card */
+.action-card { margin-top: 14px; padding: 14px 16px; border-radius: 12px; border: 1.5px dashed var(--clr-border); }
+.action-card.good { border-color: #4ade80; background: #f6fef9; }
+.action-card.bad { border-color: #f87171; background: #fff8f8; }
+.action-card.unknown { border-color: #fbbf24; background: #fffbeb; }
+.action-card strong { display: block; margin-bottom: 6px; }
+.action-card ul { padding-right: 20px; font-size: .88rem; color: #334155; }
+.action-card li { margin-bottom: 4px; }
+
+/* Ping Section */
+.ping-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.ping-mode-bar { display: flex; gap: 8px; background: #e2e8f0; padding: 4px; border-radius: 12px; margin-bottom: 12px; }
+.ping-mode-btn { border: 0; background: transparent; padding: 6px 14px; border-radius: 8px; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; color: #475569; transition: all .15s; }
+.ping-mode-btn.active { background: #fff; color: #0f172a; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+.ping-note { font-size: .84rem; color: #334155; padding: 10px 14px; background: #f0fdf4; border-radius: 10px; border: 1px solid #bbf7d0; margin-bottom: 14px; line-height: 1.7; }
+.ping-note.cloud { background: #eff6ff; border-color: #bfdbfe; }
+
+/* Dedicated Panel.* Domain Setup Box */
+.panel-domain-box {
+  background: #f8fafc;
+  border: 1px solid var(--clr-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.panel-domain-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.panel-prefix {
+  font-family: monospace;
+  font-weight: 700;
+  direction: ltr;
+  background: #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: #1e293b;
+  font-size: 1rem;
+}
+.panel-domain-input-wrap input {
+  flex: 1;
+}
+.panel-domain-input-wrap .btn {
+  white-space: nowrap;
+}
+
+.custom-target-box { display: flex; gap: 8px; margin-bottom: 14px; }
+.custom-target-box input { flex: 1; font-size: .95rem; padding: 9px 12px; }
+.custom-target-box .btn { padding: 9px 14px; white-space: nowrap; font-size: .9rem; }
+
+.ping-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.ping-table th { text-align: right; padding: 10px; background: #f1f5f9; font-weight: 700; border-bottom: 2px solid var(--clr-border); color: #334155; }
+.ping-table th:last-child, .ping-table td:last-child { text-align: left; direction: ltr; }
+.ping-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.ping-table tr:last-child td { border-bottom: none; }
+.ping-bar-cell { min-width: 120px; }
+.ping-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.ping-bar { height: 8px; border-radius: 4px; background: #e2e8f0; flex: 1; overflow: hidden; }
+.ping-bar-fill { height: 100%; border-radius: 4px; transition: width .3s ease; }
+.ping-ms { font-size: .88rem; font-weight: 700; min-width: 54px; text-align: left; direction: ltr; }
+
+.target-badge { display: inline-block; font-size: .75rem; background: #e0e7ff; color: #3730a3; padding: 1px 7px; border-radius: 6px; margin-right: 6px; font-weight: 700; }
+.target-name { direction: ltr; display: inline-block; font-weight: 700; color: #0f172a; }
+
+.pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .78rem; font-weight: 700; }
+.pill.ok { background: #dcfce7; color: #15803d; }
+.pill.slow { background: #fef9c3; color: #92400e; }
+.pill.down { background: #fee2e2; color: #b91c1c; }
+.pill.timeout { background: #fed7aa; color: #9a3412; }
+.pill.wait { background: #e2e8f0; color: #475569; }
+
+.ping-insight { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: #f8fafc; border: 1px solid var(--clr-border); font-size: .88rem; line-height: 1.8; }
+.ping-insight strong { display: block; margin-bottom: 4px; color: #0f172a; }
+
+/* Misc */
+.msg { font-size: .88rem; padding: 11px 13px; border-radius: 10px; background: #f1f5f9; color: #334155; line-height: 1.8; overflow-wrap: anywhere; margin-top: 10px; }
+.small { font-size: .82rem; color: var(--clr-muted); line-height: 1.7; margin-top: 10px; }
+.footer { font-size: .8rem; color: var(--clr-muted); text-align: center; padding: 10px; line-height: 1.8; }
+details summary { cursor: pointer; font-weight: 700; font-size: .92rem; color: #2563eb; padding: 6px 0; user-select: none; }
+details summary:hover { color: #1d4ed8; }
+.filebox { border: 1.5px dashed var(--clr-border); border-radius: 12px; padding: 14px; background: #f8fafc; margin-top: 10px; }
+.hidden { display: none !important; }
+body.loading { cursor: progress; }
+
+@media (max-width: 530px) {
+  body { padding: 12px 10px 32px; }
+  .panel { padding: 16px; border-radius: 14px; }
+  .btn { width: 100%; }
+  .controls { display: grid; grid-template-columns: 1fr; }
+  .quick-status { justify-self: center; font-size: 1.8rem; padding: 4px 0; }
+  .grid { grid-template-columns: 1fr 1fr; }
+  .ping-table { font-size: .84rem; }
+  .ping-bar-cell { display: none; }
+  .custom-target-box { flex-direction: column; }
+  .custom-target-box .btn { width: 100%; }
+  .panel-domain-input-wrap { flex-wrap: wrap; }
+  .panel-domain-input-wrap input { width: calc(100% - 95px); }
+  .panel-domain-input-wrap .btn { width: 100%; margin-top: 6px; }
+}
+</style>
+<!-- Built-in BGP dataset (641 Irancell /21 prefixes) -->
+<script src="bgp_data.js"></script>
+</head>
+<body>
+
+<!-- ── LOCK SCREEN (PASSWORD PROTECTION) ── -->
+<div id="loginScreen" class="login-wrapper">
+  <div class="login-card">
+    <div class="login-icon">🔒</div>
+    <h2>سامانه بررسی وضعیت شبکه و VPN</h2>
+    <p class="muted" style="font-size: .88rem; margin-bottom: 18px;">
+      برای دسترسی به ابزار، لطفاً رمز عبور را وارد کنید.
+    </p>
+    <form id="loginForm" onsubmit="return false;">
+      <div class="login-input-wrap">
+        <input type="password" id="passwordInput" placeholder="رمز عبور را وارد کنید…" autocomplete="current-password" autofocus>
+        <button type="button" id="togglePasswordBtn" class="toggle-eye" title="نمایش/مخفی‌سازی رمز">👁️</button>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; font-size: .85rem;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: normal; margin: 0; color: #475569;">
+          <input type="checkbox" id="rememberMe" checked>
+          مرا در این دستگاه به خاطر بسپار
+        </label>
+      </div>
+      <button class="btn" id="loginBtn" type="submit" style="width: 100%; padding: 12px;">ورود به برنامه</button>
+      <div id="loginError" class="login-error hidden">رمز عبور نادرست است. دوباره تلاش کنید.</div>
+    </form>
+    <p class="small" style="margin-top: 18px; color: #94a3b8; font-size: .78rem;">
+      رمز پیش‌فرض: <code>vpn2026</code> (قابل تغییر)
+    </p>
+  </div>
+</div>
+
+<!-- ── MAIN APPLICATION (PROTECTED) ── -->
+<div id="appContainer" class="wrap hidden">
+
+  <div class="app-header">
+    <div class="badge" style="margin-bottom:0">🌐 سامانه بررسی اختلال شبکه و VPN</div>
+    <button class="logout-btn" id="logoutBtn" type="button" title="خروج و قفل‌کردن مجدد برنامه">🔒 خروج</button>
+  </div>
+
+  <!-- ── SECTION 1: IP Check ── -->
+  <section class="panel">
+    <h1>وضعیت IP و سلامت مسیر</h1>
+    <p>بررسی کن آیا IP عمومی‌ات در رنج‌های پر اختلال BGP قرار دارد یا خیر. برای تشخیص دقیق، ابتدا VPN را خاموش کن.</p>
+    <label for="ipInput">IP عمومی فعلی</label>
+    <input id="ipInput" type="text" inputmode="decimal" placeholder="در حال شناسایی خودکار…" autocomplete="off" spellcheck="false">
+    <div class="controls">
+      <button class="btn" id="refreshBtn" type="button">شناسایی مجدد و بررسی</button>
+      <button class="btn secondary" id="checkBtn" type="button">بررسی همین IP</button>
+      <span class="quick-status" id="topStatusIndicator" title="وضعیت">🔘</span>
+    </div>
+    <p class="small">شناسایی خودکار با مکانیزم Fallback از ۴ سرور مختلف انجام می‌شود تا در صورت فیلتر بودن یک سرویس، برنامه متوقف نشود.</p>
+  </section>
+
+  <!-- ── SECTION 2: BGP Result ── -->
+  <section class="panel" aria-live="polite">
+    <h2>نتیجهٔ بررسی مسیر BGP</h2>
+    <div class="grid">
+      <div class="datum"><div class="k">IP عمومی</div><div class="v" id="shownIp">—</div></div>
+      <div class="datum"><div class="k">AS مبدأ / اپراتور</div><div class="v" id="shownAsn">—</div></div>
+      <div class="datum" style="grid-column:1/-1"><div class="k">پیشوند /21 مورد بررسی</div><div class="v" id="shownPrefix">—</div></div>
+    </div>
+
+    <div class="status-box untested" id="statusBox">
+      <div class="heading">
+        <span id="statusIcon">○</span>
+        <span id="statusTitle">بررسی‌نشده</span>
+      </div>
+      <p id="statusText">در حال شناسایی IP و دریافت اطلاعات مسیریابی…</p>
+    </div>
+
+    <div id="actionCardContainer" class="hidden"></div>
+    <div class="msg hidden" id="detailMessage"></div>
+    <p class="small" id="apiStatus">آمادهٔ بررسی.</p>
+  </section>
+
+  <!-- ── SECTION 3: Live Ping (Option A - Client-Side Direct Probe) ── -->
+  <section class="panel">
+    <div class="ping-header">
+      <h2 style="margin-bottom:0">تست پینگ و دسترسی‌پذیری سرورها</h2>
+      <button class="btn" id="pingBtn" type="button">⚡ شروع تست پینگ</button>
+    </div>
+
+    <!-- Mode Selector -->
+    <div class="ping-mode-bar">
+      <button class="ping-mode-btn active" id="modeClientBtn" type="button">📱 پینگ مستقیم از دستگاه شما (گزینه A)</button>
+      <button class="ping-mode-btn" id="modeWorkerBtn" type="button">☁️ پینگ از سرور ابری Cloudflare</button>
+    </div>
+
+    <!-- Mode Description Note -->
+    <div class="ping-note" id="pingNote">
+      🎯 <strong>مبدأ پینگ: مرورگر و اینترنت فعلی شما.</strong> این تست مستقیماً ارتباط پروتکل HTTPS را از دستگاه شما به سمت سرورها می‌سنجد. اگر سرور پاسخ دهد زمان دقیق (RTT) ثبت می‌شود؛ اگر درگاه مسدود یا فیلتر باشد، بلافاصله خطا یا تایم‌اوت گزارش می‌گردد.
+    </div>
+
+    <!-- Dedicated Panel.* Custom Domain Configuration -->
+    <div class="panel-domain-box">
+      <div style="font-weight:700;font-size:.9rem;color:#1e293b;margin-bottom:4px">
+        ⚙️ تنظیم دامنهٔ سرور اختصاصی VPN شما (ذخیره امن فقط روی مرورگر شما):
+      </div>
+      <p class="small" style="margin-top:0;margin-bottom:8px">
+        برای تست ردیف <code>panel.*</code>، بخش بعد از <code>panel.</code> را در کادر زیر وارد و ذخیره کنید. این دامنه در مخزن عمومی گیت‌هاب قرار نمی‌گیرد و فقط در حافظهٔ مرورگر دستگاه شما حفظ می‌شود.
+      </p>
+      <div class="panel-domain-input-wrap">
+        <span class="panel-prefix">panel.</span>
+        <input type="text" id="panelSuffixInput" placeholder="ادامه دامنه (مثال: domain.com)" dir="ltr">
+        <button class="btn secondary" id="savePanelDomainBtn" type="button">ثبت و ذخیره در مرورگر</button>
+      </div>
+      <div id="panelDomainNotice" class="small hidden" style="color:#15803d;font-weight:700;margin-top:6px">
+        ✓ دامنه با موفقیت در این مرورگر ذخیره و در جدول پینگ اعمال شد.
+      </div>
+    </div>
+
+    <!-- Custom Target Box -->
+    <div class="custom-target-box">
+      <input type="text" id="customTargetInput" placeholder="افزودن دامنه یا IP دلخواه دیگر (مثال: my-vps.com یا 1.2.3.4)" dir="ltr">
+      <button class="btn secondary" id="addCustomTargetBtn" type="button">+ افزودن به لیست</button>
+    </div>
+
+    <table class="ping-table" id="pingTable">
+      <thead>
+        <tr>
+          <th>آدرس مقصد</th>
+          <th>وضعیت دسترسی</th>
+          <th class="ping-bar-cell">نوار تأخیر</th>
+          <th>زمان (ms)</th>
+        </tr>
+      </thead>
+      <tbody id="pingTableBody">
+        <!-- Injected via JavaScript -->
+      </tbody>
+    </table>
+
+    <div id="pingInsightBox" class="ping-insight hidden"></div>
+    <p class="small" id="pingStatus" style="margin-top:10px">برای شروع، دکمهٔ «شروع تست پینگ» را بزنید.</p>
+  </section>
+
+  <!-- ── SECTION 4: Data Management & Password Settings ── -->
+  <section class="panel">
+    <h2>تنظیمات و پایگاه داده</h2>
+    <p class="small" id="dbInfoText">در حال بارگذاری پایگاه داده داخلی…</p>
+    
+    <details id="customDataDetails" style="margin-top: 10px;">
+      <summary>بارگذاری CSV یا TXT جدید (اختیاری - برای به‌روزرسانی داده‌های BGP)</summary>
+      <div class="filebox">
+        <label for="dataFile" style="margin-top:0">انتخاب فایل خروجی اسکریپت پایتون</label>
+        <input id="dataFile" type="file" accept=".csv,.txt,text/csv,text/plain">
+        <p class="small" id="fileStatus" style="margin-top:8px">داده‌های پیش‌فرض فعال هستند.</p>
+      </div>
+    </details>
+
+    <details id="passwordSettingsDetails" style="margin-top: 10px;">
+      <summary>🔐 ابزار تغییر رمز عبور برنامه</summary>
+      <div class="filebox">
+        <p class="small" style="margin-top:0">اگر می‌خواهید رمز عبور ورود را تغییر دهید، رمز جدید را اینجا بنویسید تا هش امن آن تولید شود:</p>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input type="text" id="newPasswordInput" placeholder="رمز عبور دلخواه جدید…" dir="ltr">
+          <button class="btn secondary" id="generateHashBtn" type="button">تولید هش</button>
+        </div>
+        <div id="generatedHashResult" class="msg hidden" style="margin-top:10px;font-family:monospace;direction:ltr;text-align:left;font-size:.85rem"></div>
+        <p class="small" style="margin-top:8px">هش تولیدشده را کپی کنید و در فایل <code>index.html</code> به جای متغیر <code>PASSWORD_HASH</code> قرار دهید.</p>
+      </div>
+    </details>
+  </section>
+
+  <p class="footer">
+    سامانه شخصی و محافظت‌شده بررسی BGP و تست مستقیم اتصال | میزبانی امن روی GitHub Pages
+  </p>
+</div>
+
+<script>
+'use strict';
+
+/* ─── SECURITY & AUTHENTICATION CONFIG ─── */
+// هش SHA-256 رمز عبور پیش‌فرض: vpn2026
+// برای تغییر رمز، از ابزار انتهای صفحه استفاده کنید و هش حاصل را اینجا جایگزین کنید.
+const PASSWORD_HASH = '7a706e198bf0ef8f0486556c3a038540f27f8051f184b0abdaf51a8d9a434602';
+
+// در صورت تمایل به استفاده از مود Cloudflare Worker، آدرس آن را اینجا بگذارید:
+const WORKER_URL = 'REPLACE_WITH_YOUR_WORKER_URL';
+
+let currentPingMode = 'client'; // 'client' (گزینه A) یا 'worker'
+let appInitialized = false;
+
+// لیست اهداف پیش‌فرض پینگ (سرور اصلی با الگوی امن panel.* بدون لو رفتن دامنه شخصی در گیت‌هاب)
+const PING_TARGETS = [
+  { host: 'panel.*', label: '⭐ سرور اصلی پنل (نیاز به واردکردن دامنه در کادر بالا)', primary: true, isCustomPanel: true },
+  { host: 'google.com', label: '🌐 اینترنت بین‌الملل', primary: false },
+  { host: 'cloudflare.com', label: '🛡️ شبکه کلودفلر', primary: false },
+  { host: '1.1.1.1', label: '📡 DNS کلودفلر', primary: false },
+  { host: 'aparat.com', label: '🇮🇷 اینترنت داخلی / ملی', primary: false }
+];
+
+/* ─── PURE JS SHA-256 (SECURE & COMPATIBLE ACROSS ALL CONTEXTS) ─── */
+function sha256Sync(ascii) {
+  function rightRotate(value, amount) { return (value >>> amount) | (value << (32 - amount)); }
+  var mathPow = Math.pow; var maxWord = mathPow(2, 32); var lengthProperty = 'length';
+  var i, j; var result = ''; var words = []; var asciiBitLength = ascii[lengthProperty] * 8;
+  var hash = []; var k = []; var primeCounter = 0; var isComposite = {};
+  for (var candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (i = 0; i < 313; i += candidate) isComposite[i] = candidate;
+      hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+      k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
+    }
+  }
+  ascii += '\x80';
+  while (ascii[lengthProperty] % 64 - 56) ascii += '\x00';
+  for (i = 0; i < ascii[lengthProperty]; i++) {
+    j = ascii.charCodeAt(i);
+    words[i >> 2] |= j << ((3 - i) % 4) * 8;
+  }
+  words[words[lengthProperty]] = ((asciiBitLength / maxWord) | 0);
+  words[words[lengthProperty]] = (asciiBitLength);
+  for (j = 0; j < words[lengthProperty];) {
+    var w = words.slice(j, j += 16); var oldHash = hash; hash = hash.slice(0, 8);
+    for (i = 0; i < 64; i++) {
+      var w15 = w[i - 15], w2 = w[i - 2];
+      var s0 = rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3);
+      var s1 = rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10);
+      w[i] = (i < 16) ? w[i] : (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      var s1h = rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25);
+      var ch = (hash[4] & hash[5]) ^ ((~hash[4]) & hash[6]);
+      var temp1 = hash[7] + s1h + ch + k[i] + w[i];
+      var s0h = rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22);
+      var maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
+      var temp2 = s0h + maj;
+      hash = [(temp1 + temp2) | 0].concat(hash);
+      hash[4] = (hash[4] + temp1) | 0;
+      hash.pop();
+    }
+    for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+  }
+  for (i = 0; i < 8; i++) {
+    for (var i2 = 3; i2 >= 0; i2--) {
+      var b = (hash[i] >> (i2 * 8)) & 255;
+      result += ((b < 16) ? '0' : '') + b.toString(16);
+    }
+  }
+  return result;
+}
+
+/* ─── LOGIN & ACCESS CONTROL ─── */
+const $ = id => document.getElementById(id);
+
+function unlockApp() {
+  $('loginScreen').classList.add('hidden');
+  $('appContainer').classList.remove('hidden');
+  if (!appInitialized) {
+    appInitialized = true;
+    syncSavedPanelDomain();
+    loadBuiltinData();
+    renderPingRows(PING_TARGETS);
+    inspectIP('', true);
+  }
+}
+
+function lockApp() {
+  localStorage.removeItem('vpn_app_auth');
+  sessionStorage.removeItem('vpn_app_auth');
+  $('appContainer').classList.add('hidden');
+  $('loginScreen').classList.remove('hidden');
+  $('passwordInput').value = '';
+  $('loginError').classList.add('hidden');
+}
+
+function handleLoginSubmit() {
+  const pwd = $('passwordInput').value;
+  const hash = sha256Sync(pwd);
+  if (hash.toLowerCase() === PASSWORD_HASH.toLowerCase()) {
+    const remember = $('rememberMe').checked;
+    if (remember) {
+      localStorage.setItem('vpn_app_auth', hash);
+    } else {
+      sessionStorage.setItem('vpn_app_auth', hash);
+    }
+    unlockApp();
+  } else {
+    $('loginError').classList.remove('hidden');
+    $('passwordInput').select();
+  }
+}
+
+$('loginBtn').addEventListener('click', handleLoginSubmit);
+$('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleLoginSubmit(); });
+$('togglePasswordBtn').addEventListener('click', () => {
+  const input = $('passwordInput');
+  input.type = input.type === 'password' ? 'text' : 'password';
+});
+$('logoutBtn').addEventListener('click', lockApp);
+
+// Password Hash Generator tool in settings
+$('generateHashBtn').addEventListener('click', () => {
+  const newPwd = $('newPasswordInput').value;
+  if (!newPwd) return;
+  const newHash = sha256Sync(newPwd);
+  const resBox = $('generatedHashResult');
+  resBox.innerHTML = `<strong>کد هش برای رمز شما:</strong><br>${newHash}`;
+  resBox.classList.remove('hidden');
+});
+
+/* ─── PANEL.* DOMAIN CONFIGURATION & PERSISTENCE ─── */
+
+function syncSavedPanelDomain() {
+  const saved = (localStorage.getItem('vpn_panel_suffix') || '').trim();
+  if (saved) {
+    $('panelSuffixInput').value = saved;
+    const clean = saved.replace(/^https?:\/\//i, '').replace(/^panel\./i, '').replace(/\/.*$/, '').trim();
+    PING_TARGETS[0].host = 'panel.' + clean;
+    PING_TARGETS[0].label = '⭐ سرور اصلی پنل اختصاصی شما';
+  }
+}
+
+function savePanelDomain() {
+  const raw = $('panelSuffixInput').value.trim();
+  const clean = raw.replace(/^https?:\/\//i, '').replace(/^panel\./i, '').replace(/\/.*$/, '').trim();
+  if (!clean) return;
+  localStorage.setItem('vpn_panel_suffix', clean);
+  PING_TARGETS[0].host = 'panel.' + clean;
+  PING_TARGETS[0].label = '⭐ سرور اصلی پنل اختصاصی شما';
+  renderPingRows(PING_TARGETS);
+  $('panelDomainNotice').classList.remove('hidden');
+  setTimeout(() => $('panelDomainNotice').classList.add('hidden'), 3500);
+}
+
+$('savePanelDomainBtn').addEventListener('click', savePanelDomain);
+$('panelSuffixInput').addEventListener('keydown', e => { if (e.key === 'Enter') savePanelDomain(); });
+
+/* ─── BGP & NETWORK LOGIC ─── */
+
+const STATUS_EMOJIS = { untested: '🔘', good: '🟢', bad: '🔴', unknown: '🟡' };
+const CATEGORY = {
+  delta: 'Delta only', core: 'German Core-Backbone only',
+  both: 'Both', neither: 'Neither observed', unknown: 'Unreviewed'
+};
+
+let recordsBy21 = new Map();
+let loadedFilename = '';
+let lastAsns = [];
+let lastEvaluatedIp = '';
+
+function validIPv4(ip) {
+  const p = String(ip).trim().split('.');
+  return p.length === 4 && p.every(x => /^\d{1,3}$/.test(x) && +x >= 0 && +x <= 255 && (x === '0' || !x.startsWith('0')));
+}
+function ipv4Num(ip) { return ip.split('.').reduce((n, p) => n * 256 + +p, 0); }
+function numToIp(n) { return [24,16,8,0].map(s => (n >> s) & 255).join('.'); }
+function get21(ip) {
+  const n = ipv4Num(ip); const b = 1 << 11;
+  return numToIp(Math.floor(n / b) * b) + '/21';
+}
+function normalizePrefix(pref) {
+  if (!pref || !pref.includes('/')) return null;
+  const [ip, bits] = pref.trim().split('/'); const len = +bits;
+  if (!validIPv4(ip) || !Number.isInteger(len) || len < 0 || len > 32) return null;
+  const n = ipv4Num(ip); const b = 1 << (32 - len);
+  return numToIp(Math.floor(n / b) * b) + '/' + len;
+}
+function normCat(raw) {
+  const s = String(raw || '').trim().toLowerCase().replace(/[-_–—]/g,' ').replace(/\s+/g,' ');
+  if (s.includes('delta only')) return CATEGORY.delta;
+  if (s.includes('core backbone only')) return CATEGORY.core;
+  if (s === 'both') return CATEGORY.both;
+  if (s.includes('neither')) return CATEGORY.neither;
+  return CATEGORY.unknown;
+}
+function boolish(v) { return ['true','1','yes','y'].includes(String(v ?? '').trim().toLowerCase()); }
+function parseAsnList(v) {
+  const s = String(v || '').trim();
+  if (!s || s === '-' || /^n\/?a$/i.test(s)) return [];
+  return [...new Set([...s.matchAll(/(?:^|[^A-Za-z0-9])(?:AS)?(\d{1,10})(?=$|[^\d])/gi)].map(m => +m[1]).filter(n => n > 0))];
+}
+
+function parseCsv(text) {
+  const out = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"' && text[i+1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell.replace(/\r$/, '')); out.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell.length || row.length) { row.push(cell.replace(/\r$/, '')); out.push(row); }
+  if (!out.length) return [];
+  const hdrs = out.shift().map(h => h.replace(/^\uFEFF/,'').trim().toLowerCase());
+  return out.filter(r => r.some(c => c.trim())).map(r => { const o = {}; hdrs.forEach((h,i) => o[h] = (r[i]||'').trim()); return o; });
+}
+function field(row, names) { for (const n of names) if (row[n] !== undefined && row[n].trim()) return row[n]; return ''; }
+function parseCsvRecords(text) {
+  return parseCsv(text).map(row => {
+    const prefix = normalizePrefix(field(row, ['prefix_21','prefix21','prefix','cidr','network']));
+    if (!prefix || !prefix.endsWith('/21')) return null;
+    const newer = row['intermediate_asns_between_tic_and_tier1'] !== undefined || row['tic_tier1_presence'] !== undefined || row['prefix_21'] !== undefined;
+    const reviewedRaw = field(row, ['reviewed']);
+    return {
+      prefix,
+      category: normCat(field(row, ['category','classification','group','status'])),
+      intermediateRaw: field(row, ['intermediate_asns_between_tic_and_tier1','intermediate_asns','intermediates']),
+      presence: field(row, ['tic_tier1_presence','tic_and_tier1_presence']),
+      evidence: field(row, ['evidence_level','evidence']),
+      reviewed: reviewedRaw === '' ? null : boolish(reviewedRaw),
+      newer, raw: row
+    };
+  }).filter(Boolean);
+}
+function parseTxtRecords(text) {
+  let active = CATEGORY.unknown; const out = [];
+  for (const line of text.replace(/^\uFEFF/,'').split(/\r?\n/)) {
+    const head = line.match(/^\s*===\s*(.*?)\s*===\s*$/);
+    if (head) { active = normCat(head[1].replace(/\s*\(\d+\)\s*$/,'').trim()); continue; }
+    const m = line.match(/(?:^|\s)(\d{1,3}(?:\.\d{1,3}){3}\/\d{1,2})(?:\s|$)/);
+    if (!m) continue;
+    const prefix = normalizePrefix(m[1]);
+    if (prefix && prefix.endsWith('/21')) out.push({ prefix, category: active, intermediateRaw:'', presence:'', evidence:'', reviewed:null, newer:false, raw:{} });
+  }
+  return out;
+}
+
+function rowUsable(r) {
+  if (!r || r.category === CATEGORY.unknown) return false;
+  if (r.newer) {
+    if (r.reviewed === false) return false;
+    if (/unreviewed|no usable|insufficient|ambiguous/i.test(r.evidence||'')) return false;
+  }
+  return true;
+}
+function evaluateRecord(r) {
+  const unk = (text) => ({ kind:'unknown', title:'نامشخص', text });
+  if (!rowUsable(r)) return unk('برای این محدوده دادهٔ کافی یا قابل اتکا پیدا نشد.');
+  if (r.category === CATEGORY.both || r.category === CATEGORY.neither) return unk('اطلاعات مسیرها یک نتیجهٔ روشن نمی‌دهد.');
+  if (r.newer) {
+    if (!/TIC and Tier-1 present/i.test(r.presence||'')) return unk('دادهٔ مسیر برای تصمیم‌گیری کافی نیست.');
+    const raw = String(r.intermediateRaw||'').trim();
+    const asns = parseAsnList(raw);
+    const hasDelta = asns.includes(29049), hasCore = asns.includes(33891), hasOther = asns.some(a => a !== 29049);
+    if (r.category === CATEGORY.delta) {
+      if (hasDelta && hasOther)  return { kind:'good', title:'احتمالاً سالم', text:'مسیرهای ثبت‌شده با الگوی مطلوب سازگارند. فعلاً IP را نگه دار؛ کانفیگ، سرور یا اختلال موقت شبکه را بررسی کن.' };
+      if (hasDelta && !hasOther) return { kind:'bad',  title:'احتمالاً خراب', text:'فقط Delta به‌عنوان واسطه بین TIC و Tier-1 دیده شده؛ ابتدا IP دیگری را امتحان کن.' };
+      if (!raw || raw === '-')   return { kind:'bad',  title:'احتمالاً خراب', text:'بین TIC و Tier-1 واسطهٔ موردنظر دیده نشده است؛ ابتدا IP دیگری را امتحان کن.' };
+      return unk('داده‌ها الگوی مشخصی برای این مسیر نشان نمی‌دهند.');
+    }
+    if (r.category === CATEGORY.core) {
+      if (hasCore) return { kind:'bad', title:'احتمالاً خراب', text:'Core-Backbone در بخش واسطهٔ مسیر دیده شده است؛ ابتدا IP دیگری را امتحان کن.' };
+      return unk('Core-Backbone در دسته‌بندی دیده شده اما واسطه‌ها آن را تأیید نمی‌کنند.');
+    }
+    return unk('دسته‌بندی این Prefix برای نتیجه‌گیری کافی نیست.');
+  }
+  if (r.category === CATEGORY.delta) return { kind:'good', title:'احتمالاً سالم', text:'این Prefix در گروه Delta only است؛ فعلاً IP را نگه دار.' };
+  if (r.category === CATEGORY.core) return { kind:'bad',  title:'احتمالاً خراب', text:'این Prefix در گروه Core-Backbone only است؛ ابتدا IP دیگری را امتحان کن.' };
+  return unk('نتیجهٔ کافی برای تصمیم‌گیری موجود نیست.');
+}
+
+function renderStatus(result) {
+  const kind = result?.kind || 'untested';
+  const emoji = STATUS_EMOJIS[kind] || '🔘';
+  $('statusBox').className = 'status-box ' + kind;
+  $('statusIcon').textContent = { good:'✓', bad:'!', untested:'○', unknown:'?' }[kind] || '?';
+  $('statusTitle').textContent = result.title || (kind === 'untested' ? 'بررسی‌نشده' : 'نامشخص');
+  $('statusText').textContent = result.text || '';
+  const ind = $('topStatusIndicator');
+  ind.textContent = emoji;
+  ind.title = 'وضعیت: ' + (result.title || '');
+  renderActionCard(kind);
+}
+
+function renderActionCard(kind) {
+  const c = $('actionCardContainer');
+  if (kind === 'bad') {
+    c.className = 'action-card bad'; c.classList.remove('hidden');
+    c.innerHTML = `<strong>💡 راهکار پیشنهادی: تغییر IP عمومی</strong>
+      <ul>
+        <li><b>سیم‌کارت:</b> حالت هواپیما (Airplane Mode) را ۱۰ ثانیه روشن و خاموش کنید.</li>
+        <li><b>مودم TD-LTE / وای‌فای:</b> ۳۰ ثانیه مودم را خاموش و سپس روشن کنید.</li>
+        <li>رنج IP فعلی دچار اختلال BGP است؛ وقت خود را با دستکاری کانفیگ تلف نکنید.</li>
+      </ul>`;
+  } else if (kind === 'good') {
+    c.className = 'action-card good'; c.classList.remove('hidden');
+    c.innerHTML = `<strong>💡 راهکار پیشنهادی: IP سالم است؛ کانفیگ یا سرور را بررسی کنید</strong>
+      <ul>
+        <li>مسیر شبکه در گروه مطلوب است. نیازی به تغییر مکرر IP نیست.</li>
+        <li>پینگ سرور (در بخش زیر) یا پورت و اعتبار کانفیگ را بررسی کنید.</li>
+      </ul>`;
+  } else if (kind === 'unknown') {
+    c.className = 'action-card unknown'; c.classList.remove('hidden');
+    c.innerHTML = `<strong>💡 وضعیت BGP نامشخص</strong>
+      <ul><li>شواهد کافی برای سلامت یا خرابی مسیر وجود ندارد. می‌توانید یک بار حالت هواپیما را برای دریافت رنج دیگر امتحان کنید.</li></ul>`;
+  } else {
+    c.classList.add('hidden'); c.innerHTML = '';
+  }
+}
+
+function renderDetail(text) {
+  const b = $('detailMessage');
+  b.textContent = text || '';
+  b.classList.toggle('hidden', !text);
+}
+
+function indexRecords(rows) {
+  const idx = new Map();
+  for (const r of rows) {
+    const prev = idx.get(r.prefix);
+    const score = (r.newer?4:0) + (r.reviewed===true?2:0) + (rowUsable(r)?1:0);
+    const prevScore = prev ? (prev.newer?4:0)+(prev.reviewed===true?2:0)+(rowUsable(prev)?1:0) : -1;
+    if (!prev || score > prevScore) idx.set(r.prefix, r);
+  }
+  recordsBy21 = idx;
+}
+
+function loadBuiltinData() {
+  if (typeof window.BUILTIN_BGP_DATA !== 'object') {
+    $('dbInfoText').textContent = 'پایگاه داده داخلی بارگذاری نشد.';
+    return false;
+  }
+  const catNames = ['Unreviewed','Delta only','German Core-Backbone only','Both','Neither observed'];
+  const rows = Object.entries(window.BUILTIN_BGP_DATA).map(([prefix, arr]) => ({
+    prefix, category: catNames[arr[0]] || 'Unreviewed',
+    intermediateRaw: arr[1]||'',
+    presence: arr[2] ? 'TIC and Tier-1 present in same path' : '',
+    evidence: arr[3]||'',
+    reviewed: arr[4]===1?true:arr[4]===0?false:null,
+    newer: true, raw: {}
+  }));
+  indexRecords(rows);
+  loadedFilename = window.BUILTIN_BGP_META?.description || 'پایگاه داده داخلی BGP';
+  $('dbInfoText').textContent = `پایگاه داده توکار فعال: ${window.BUILTIN_BGP_META?.description || recordsBy21.size + ' رنج /21'}`;
+  $('fileStatus').textContent = 'داده‌های پیش‌فرض فعال هستند.';
+  return true;
+}
+
+/* ─── IP DETECTION ─── */
+async function fetchWithTimeout(url, ms = 3500) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
+    clearTimeout(t);
+    return r;
+  } catch (e) {
+    clearTimeout(t);
+    throw e;
+  }
+}
+
+async function getPublicIP() {
+  const eps = [
+    { url: 'https://api.ipify.org?format=json',  parse: r => r.json().then(d => d.ip) },
+    { url: 'https://api4.my-ip.io/v2/ip.json',   parse: r => r.json().then(d => d.ip) },
+    { url: 'https://ipwho.is/',                  parse: r => r.json().then(d => d.ip) },
+    { url: 'https://api.myip.com',               parse: r => r.json().then(d => d.ip) },
+  ];
+  for (const ep of eps) {
+    try {
+      const r = await fetchWithTimeout(ep.url, 3500);
+      if (r.ok) {
+        const ip = await ep.parse(r);
+        if (validIPv4(ip)) return ip;
+      }
+    } catch {}
+  }
+  throw new Error('شناسایی خودکار IP ناموفق بود. لطفاً IP را دستی وارد کنید.');
+}
+
+async function getASN(ip) {
+  try {
+    const r = await fetchWithTimeout(`https://stat.ripe.net/data/network-info/data.json?resource=${encodeURIComponent(ip)}&sourceapp=vpn_ip_checker`, 4000);
+    if (!r.ok) return [];
+    const d = (await r.json()).data || {};
+    return Array.isArray(d.asns) ? d.asns.map(a => String(a).match(/\d+/)?.[0]).filter(Boolean) : [];
+  } catch { return []; }
+}
+
+async function inspectIP(ip, autodetect = false) {
+  $('refreshBtn').disabled = $('checkBtn').disabled = true;
+  document.body.classList.add('loading');
+  $('apiStatus').textContent = 'در حال دریافت اطلاعات IP و ASN…';
+  renderStatus({ kind:'untested', title:'در حال بررسی…', text:'کمی صبر کنید…' });
+  renderDetail('');
+  try {
+    if (autodetect) ip = await getPublicIP();
+    ip = String(ip||'').trim();
+    if (!validIPv4(ip)) throw new Error('IP واردشده IPv4 معتبر نیست.');
+    $('ipInput').value = ip;
+    $('shownIp').textContent = ip;
+    $('shownPrefix').textContent = get21(ip);
+    $('shownAsn').textContent = 'در حال استعلام…';
+    const asns = await getASN(ip);
+    lastAsns = asns;
+    $('shownAsn').textContent = asns.length ? asns.map(n => 'AS'+n).join(' / ') : 'نامشخص';
+    const prefix = get21(ip);
+    const row = recordsBy21.get(prefix);
+    if (!recordsBy21.size) {
+      lastEvaluatedIp = ip;
+      renderStatus({ kind:'untested', title:'بررسی‌نشده', text:'پایگاه داده بارگذاری نشده است.' });
+    } else if (!row) {
+      lastEvaluatedIp = ip;
+      renderStatus({ kind:'unknown', title:'نامشخص', text:`پیشوند ${prefix} در پایگاه داده فعلی وجود ندارد. (پایگاه داده ایرانسل است)` });
+    } else {
+      lastEvaluatedIp = ip;
+      const result = evaluateRecord(row);
+      renderStatus(result);
+      const orig = asns.length ? 'ASN: ' + asns.map(n=>'AS'+n).join(', ') : '';
+      renderDetail('پیشوند /21: ' + prefix + (orig ? ' | ' + orig : '') + (row.newer ? '' : ' | (سازگاری با فرمت قدیمی)'));
+    }
+    $('apiStatus').textContent = 'بررسی با موفقیت انجام شد.';
+  } catch (err) {
+    lastEvaluatedIp = '';
+    $('shownIp').textContent = ip || '—';
+    if ($('shownPrefix').textContent === '—' && validIPv4(ip)) $('shownPrefix').textContent = get21(ip);
+    $('shownAsn').textContent = 'نامشخص';
+    renderStatus({ kind: recordsBy21.size?'unknown':'untested', title: recordsBy21.size?'نامشخص':'بررسی‌نشده', text: err.message || 'خطا در دریافت اطلاعات.' });
+    $('apiStatus').textContent = err.message || 'خطای نامشخص.';
+  } finally {
+    $('refreshBtn').disabled = $('checkBtn').disabled = false;
+    document.body.classList.remove('loading');
+  }
+}
+
+/* ─── OPTION A: CLIENT-SIDE DIRECT PING ENGINE ─── */
+
+async function pingFromBrowser(host, timeoutMs = 4500) {
+  const cleanHost = host.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').trim();
+  if (!cleanHost || cleanHost === 'panel.*' || cleanHost.includes('*')) {
+    return { host: cleanHost, ms: null, reachable: false, statusText: 'دامنه را در کادر بالا وارد کنید', error: 'not_configured' };
+  }
+
+  const url = `https://${cleanHost}/?_probe=${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const t0 = performance.now();
+
+  try {
+    await fetch(url, {
+      method: 'GET',
+      mode: 'no-cors',
+      cache: 'no-store',
+      signal: ctrl.signal
+    });
+    clearTimeout(timer);
+    const ms = Math.round(performance.now() - t0);
+    return {
+      host: cleanHost,
+      ms,
+      reachable: true,
+      statusText: ms < 150 ? 'عالی و سریع' : (ms < 350 ? 'پاسخ عادی' : 'کند'),
+      error: null
+    };
+  } catch (err) {
+    clearTimeout(timer);
+    const elapsed = Math.round(performance.now() - t0);
+    const isTimeout = err.name === 'AbortError' || elapsed >= timeoutMs;
+    if (isTimeout) {
+      return {
+        host: cleanHost,
+        ms: timeoutMs,
+        reachable: false,
+        statusText: 'تایم‌اوت (مسدود / بی‌پاسخ)',
+        error: 'timeout'
+      };
+    }
+    return {
+      host: cleanHost,
+      ms: elapsed,
+      reachable: false,
+      statusText: elapsed < 350 ? 'قطع فوری / مسدودسازی' : 'عدم برقراری ارتباط',
+      error: 'network_blocked'
+    };
+  }
+}
+
+async function pingFromWorker(targets) {
+  const validTargets = targets.filter(t => !t.host.includes('*'));
+  const targetStr = validTargets.map(t => t.host).join(',');
+  const url = WORKER_URL.replace(/\/$/, '') + '/ping?targets=' + encodeURIComponent(targetStr);
+  const res = await fetchWithTimeout(url, 12000);
+  if (!res.ok) throw new Error('Worker پاسخ نامعتبر برگرداند: ' + res.status);
+  const data = await res.json();
+  return data.results || [];
+}
+
+/* ─── PING UI RENDERING ─── */
+
+function msToColor(ms, reachable) {
+  if (!reachable || ms === null) return '#ef4444';
+  if (ms < 150) return '#22c55e';
+  if (ms < 350) return '#f59e0b';
+  return '#ef4444';
+}
+
+function getPillHtml(res) {
+  if (!res.reachable) {
+    if (res.error === 'not_configured') return `<span class="pill wait">⚠️ نیاز به تنظیم</span>`;
+    if (res.error === 'timeout') return `<span class="pill timeout">⏳ تایم‌اوت</span>`;
+    return `<span class="pill down">🔴 مسدود / قطع</span>`;
+  }
+  if (res.ms < 150) return `<span class="pill ok">🟢 ${res.statusText || 'سریع'}</span>`;
+  if (res.ms < 350) return `<span class="pill slow">🟡 ${res.statusText || 'معمولی'}</span>`;
+  return `<span class="pill down">🟠 ${res.statusText || 'کند'}</span>`;
+}
+
+function renderPingRows(targets) {
+  const tbody = $('pingTableBody');
+  tbody.innerHTML = '';
+  for (const t of targets) {
+    const tr = document.createElement('tr');
+    tr.id = 'ping-row-' + t.host.replace(/[^a-z0-9]/gi, '-');
+    tr.innerHTML = `
+      <td>
+        ${t.primary ? '<span class="target-badge">هدف اصلی</span>' : ''}
+        <span class="target-name">${t.host}</span>
+        ${t.label ? `<span style="display:block;font-size:.78rem;color:#64748b;margin-top:2px">${t.label}</span>` : ''}
+      </td>
+      <td class="status-cell"><span class="pill wait">در انتظار تست…</span></td>
+      <td class="ping-bar-cell">
+        <div class="ping-bar-wrap">
+          <div class="ping-bar"><div class="ping-bar-fill" style="width:0%;background:#94a3b8"></div></div>
+        </div>
+      </td>
+      <td class="ping-ms">—</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+function updatePingRow(res) {
+  const rowId = 'ping-row-' + res.host.replace(/[^a-z0-9]/gi, '-');
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+  const cells = tr.querySelectorAll('td');
+  cells[1].innerHTML = getPillHtml(res);
+
+  const color = msToColor(res.ms, res.reachable);
+  const pct = res.reachable ? Math.min(100, Math.max(10, Math.round((res.ms / 500) * 100))) : 100;
+  const bar = cells[2].querySelector('.ping-bar-fill');
+  if (bar) bar.style.cssText = `width:${pct}%;background:${color}`;
+
+  const msDisplay = res.reachable ? `${res.ms} ms` : (res.error === 'not_configured' ? 'تنظیم نشده' : (res.error === 'timeout' ? 'تایم‌اوت' : 'قطع'));
+  cells[3].textContent = msDisplay;
+  cells[3].style.color = color;
+}
+
+function generatePingInsights(results) {
+  const mainPanel = results.find(r => r.isCustomPanel || r.primary);
+  const google = results.find(r => r.host.includes('google.com'));
+  const aparat = results.find(r => r.host.includes('aparat.com'));
+  const box = $('pingInsightBox');
+
+  let text = '';
+  if (mainPanel && !mainPanel.host.includes('*')) {
+    if (mainPanel.reachable) {
+      text = `✅ <strong>سرور اصلی (${mainPanel.host}) در دسترس است (${mainPanel.ms} ms):</strong> اتصال مستقیم دستگاه شما به این سرور برقرار است. اگر VPN متصل نمی‌شود، مشکل از پورت پروتکل، کانفیگ، یا انقضای اکانت است و نه مسدود بودن کل سرور.`;
+    } else if (!mainPanel.reachable) {
+      if (google && google.reachable) {
+        text = `❌ <strong>سرور اصلی (${mainPanel.host}) از اینترنت شما مسدود است:</strong> در حالی که اینترنت بین‌الملل شما کار می‌کند، درخواست به این سرور پاسخ نمی‌دهد (احتمال فیلترینگ مستقیم یا تغییر IP سرور). یک بار IP خود را با حالت هواپیما تغییر دهید.`;
+      } else if (aparat && aparat.reachable) {
+        text = `⚠️ <strong>اینترنت بین‌الملل مسدود یا شدیداً محدود است:</strong> سایت داخلی پاسخ می‌دهد اما سرورهای خارجی و ${mainPanel.host} پاسخ نمی‌دهند (وضعیت اینترنت ملی/محدودیت اپراتور).`;
+      } else {
+        text = `⚠️ <strong>هیچ‌یک از سرورها پاسخ ندادند:</strong> اتصال اینترنت دستگاه خود را بررسی کنید.`;
+      }
+    }
+  }
+
+  if (text) {
+    box.innerHTML = text;
+    box.classList.remove('hidden');
+  } else {
+    box.classList.add('hidden');
+  }
+}
+
+async function runPing() {
+  const btn = $('pingBtn');
+  btn.disabled = true;
+  $('pingInsightBox').classList.add('hidden');
+  renderPingRows(PING_TARGETS);
+
+  if (currentPingMode === 'worker') {
+    const isConfigured = WORKER_URL && WORKER_URL !== 'REPLACE_WITH_YOUR_WORKER_URL';
+    if (!isConfigured) {
+      $('pingStatus').innerHTML = '⚠️ آدرس Cloudflare Worker تنظیم نشده است. ابتدا کد <code>worker.js</code> را مستقر کنید یا به حالت «پینگ مستقیم از دستگاه» برگردید.';
+      btn.disabled = false;
+      return;
+    }
+    $('pingStatus').textContent = 'در حال استعلام از سرور ابری Cloudflare…';
+    try {
+      const results = await pingFromWorker(PING_TARGETS);
+      for (const r of results) updatePingRow(r);
+      $('pingStatus').textContent = 'تست از سرور ابری با موفقیت انجام شد.';
+      generatePingInsights(results);
+    } catch (err) {
+      $('pingStatus').textContent = 'خطا در ارتباط با Worker: ' + (err.message || err);
+    } finally {
+      btn.disabled = false;
+    }
+    return;
+  }
+
+  // گزینه A: تست مستقیم از مرورگر کاربر
+  $('pingStatus').textContent = 'در حال تست اتصال مستقیم از مرورگر شما…';
+  const results = [];
+  
+  await Promise.all(PING_TARGETS.map(async (t) => {
+    const res = await pingFromBrowser(t.host);
+    res.primary = t.primary;
+    res.isCustomPanel = t.isCustomPanel;
+    results.push(res);
+    updatePingRow(res);
+  }));
+
+  $('pingStatus').textContent = 'تست مستقیم از دستگاه شما کامل شد.';
+  generatePingInsights(results);
+  btn.disabled = false;
+}
+
+/* ─── CUSTOM TARGET HANDLER ─── */
+$('addCustomTargetBtn').addEventListener('click', async () => {
+  const input = $('customTargetInput');
+  const val = input.value.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+  if (!val) return;
+
+  const existing = PING_TARGETS.find(t => t.host.toLowerCase() === val.toLowerCase());
+  if (!existing) {
+    PING_TARGETS.push({ host: val, label: 'سفارشی', primary: false });
+    renderPingRows(PING_TARGETS);
+  }
+  input.value = '';
+  const res = await pingFromBrowser(val);
+  updatePingRow(res);
+});
+
+/* ─── PING MODE SWITCH ─── */
+$('modeClientBtn').addEventListener('click', () => {
+  currentPingMode = 'client';
+  $('modeClientBtn').classList.add('active');
+  $('modeWorkerBtn').classList.remove('active');
+  $('pingNote').className = 'ping-note';
+  $('pingNote').innerHTML = '🎯 <strong>مبدأ پینگ: مرورگر و اینترنت فعلی شما (گزینه A).</strong> این تست مستقیماً پکت‌های اتصال HTTPS را از گوشی یا رایانهٔ شما ارسال می‌کند. در صورت فیلتر بودن دامنه یا پورت در اپراتور شما، بلافاصله مشخص می‌شود.';
+  renderPingRows(PING_TARGETS);
+  $('pingInsightBox').classList.add('hidden');
+  $('pingStatus').textContent = 'حالت پینگ مستقیم از دستگاه فعال شد. دکمه «شروع تست پینگ» را بزنید.';
+});
+
+$('modeWorkerBtn').addEventListener('click', () => {
+  currentPingMode = 'worker';
+  $('modeWorkerBtn').classList.add('active');
+  $('modeClientBtn').classList.remove('active');
+  $('pingNote').className = 'ping-note cloud';
+  $('pingNote').innerHTML = '☁️ <strong>مبدأ پینگ: سرور ابری Cloudflare (اروپا/آمریکا).</strong> این حالت برای این است که ببینید آیا سرور موردنظر اصلاً از خارج از ایران آنلاین و سالم است یا خاموش شده است.';
+  renderPingRows(PING_TARGETS);
+  $('pingInsightBox').classList.add('hidden');
+  $('pingStatus').textContent = 'حالت پینگ ابری فعال شد. دکمه «شروع تست پینگ» را بزنید.';
+});
+
+/* ─── FILE UPLOAD HANDLER ─── */
+$('dataFile').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0]; if (!file) return;
+  $('fileStatus').textContent = 'در حال پردازش ' + file.name + '…';
+  try {
+    const text = await file.text();
+    const rows = file.name.toLowerCase().endsWith('.csv') ? parseCsvRecords(text) : parseTxtRecords(text);
+    if (!rows.length) throw new Error('فایل معتبر یافت نشد.');
+    indexRecords(rows); loadedFilename = file.name;
+    $('fileStatus').textContent = `${file.name} — ${recordsBy21.size} رنج /21`;
+    $('dbInfoText').textContent = `فایل دستی فعال: ${file.name}`;
+    const ip = $('ipInput').value.trim();
+    if (ip) await inspectIP(ip, false);
+    else $('apiStatus').textContent = 'فایل آماده است.';
+  } catch (err) {
+    recordsBy21 = new Map(); loadedFilename = ''; lastEvaluatedIp = '';
+    $('fileStatus').textContent = err.message || 'خواندن فایل ناموفق.';
+    renderStatus({ kind:'untested', title:'بررسی‌نشده', text: err.message || 'فایل نامعتبر است.' });
+    renderDetail('');
+  }
+});
+
+/* ─── IP INPUT CHANGE ─── */
+$('ipInput').addEventListener('input', () => {
+  const v = $('ipInput').value.trim();
+  if (lastEvaluatedIp && v !== lastEvaluatedIp) {
+    lastEvaluatedIp = '';
+    renderStatus({ kind:'untested', title:'بررسی‌نشده', text:'IP تغییر کرد. برای بررسی مجدد دکمه را بزنید.' });
+    renderDetail('');
+    $('shownIp').textContent = v || '—';
+    $('shownPrefix').textContent = validIPv4(v) ? get21(v) : '—';
+    $('shownAsn').textContent = 'در انتظار بررسی';
+    $('apiStatus').textContent = 'آمادهٔ بررسی.';
+  }
+});
+
+/* ─── EVENT LISTENERS ─── */
+$('refreshBtn').addEventListener('click', () => inspectIP('', true));
+$('checkBtn').addEventListener('click', () => inspectIP($('ipInput').value, false));
+$('ipInput').addEventListener('keydown', e => { if (e.key === 'Enter') inspectIP($('ipInput').value, false); });
+$('pingBtn').addEventListener('click', runPing);
+
+/* ─── INIT: CHECK AUTHENTICATION FIRST ─── */
+window.addEventListener('DOMContentLoaded', () => {
+  const savedToken = localStorage.getItem('vpn_app_auth') || sessionStorage.getItem('vpn_app_auth');
+  if (savedToken && savedToken.toLowerCase() === PASSWORD_HASH.toLowerCase()) {
+    unlockApp();
+  }
+});
+</script>
+</body>
+</html>
