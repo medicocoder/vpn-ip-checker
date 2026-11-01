@@ -466,7 +466,7 @@ body.loading { cursor: progress; }
       <button class="btn secondary" id="checkBtn" type="button">بررسی همین IP</button>
       <span class="quick-status" id="topStatusIndicator" title="وضعیت">🔘</span>
     </div>
-    <p class="small">شناسایی خودکار با مکانیزم Fallback از چندین سرور مستقل (از جمله ipify، ipinfo.now، ip4.now و my-ip) انجام می‌شود تا در صورت فیلتر بودن یک سرویس، برنامه متوقف نشود.</p>
+    <p class="small">شناسایی خودکار با مکانیزم Fallback از چندین سرور مستقل (از جمله ipify، ipinfo.now، icanhazip و my-ip) انجام می‌شود تا در صورت فیلتر بودن یک سرویس، برنامه متوقف نشود.</p>
   </section>
 
   <!-- ── SECTION 2: BGP Result ── -->
@@ -1040,7 +1040,6 @@ async function getPublicIP() {
     { url: 'https://api.ipify.org?format=json',  parse: r => r.json().then(d => d.ip) },
     { url: 'https://api4.my-ip.io/v2/ip.json',   parse: r => r.json().then(d => d.ip) },
     { url: 'https://ipinfo.now/json',            parse: r => r.json().then(d => d.ip_addr || d.ip) },
-    { url: 'https://ip4.now/',                   parse: r => r.text().then(t => t.trim()) },
     { url: 'https://ipv4.icanhazip.com/',        parse: r => r.text().then(t => t.trim()) },
     { url: 'https://ipwho.is/',                  parse: r => r.json().then(d => d.ip) },
     { url: 'https://api.myip.com',               parse: r => r.json().then(d => d.ip) },
