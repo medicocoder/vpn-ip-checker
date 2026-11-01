@@ -116,6 +116,144 @@ body { padding: 18px 14px 48px; line-height: 1.7; min-height: 100vh; }
 }
 .logout-btn:hover { background: #fecaca; }
 
+/* Primary Target Connection Banner at top */
+.primary-banner {
+  border-radius: 16px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  border: 1.5px solid var(--clr-border);
+  background: var(--clr-panel);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(15,23,42,.04);
+  transition: all .25s ease;
+}
+.primary-banner-body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+}
+.primary-banner-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  flex-shrink: 0;
+  transition: transform .2s ease;
+}
+.primary-banner-content {
+  flex: 1;
+}
+.primary-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+.primary-banner-label {
+  font-size: .86rem;
+  color: var(--clr-muted);
+  font-weight: 700;
+}
+.primary-banner-host {
+  font-family: monospace;
+  font-size: .92rem;
+  background: #e2e8f0;
+  color: #0f172a;
+  padding: 2px 8px;
+  border-radius: 6px;
+  direction: ltr;
+  display: inline-block;
+  font-weight: 700;
+}
+.primary-banner-status {
+  font-size: 1.02rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.primary-banner-status .status-text {
+  display: inline-block;
+}
+.primary-banner-status .status-sub {
+  font-size: .84rem;
+  font-weight: normal;
+}
+.btn-banner {
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font: inherit;
+  font-size: .86rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--clr-accent);
+  color: #fff;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.btn-banner:hover { background: #334155; }
+.btn-banner:disabled { opacity: .55; cursor: wait; }
+
+/* Banner States */
+.primary-banner.untested {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+.primary-banner.untested .primary-banner-status { color: #64748b; }
+
+.primary-banner.checking {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+.primary-banner.checking .primary-banner-icon {
+  background: #dbeafe;
+  animation: pulse-ring 1.3s infinite ease-in-out;
+}
+.primary-banner.checking .primary-banner-status { color: #1d4ed8; }
+
+.primary-banner.good {
+  border-color: #86efac;
+  background: #f0fdf4;
+  box-shadow: 0 4px 18px rgba(22, 163, 74, .12);
+}
+.primary-banner.good .primary-banner-icon { background: #dcfce7; }
+.primary-banner.good .primary-banner-status { color: #15803d; }
+.primary-banner.good .status-sub { color: #166534; }
+
+.primary-banner.bad {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  box-shadow: 0 4px 18px rgba(220, 38, 38, .12);
+}
+.primary-banner.bad .primary-banner-icon { background: #fee2e2; }
+.primary-banner.bad .primary-banner-status { color: #b91c1c; }
+.primary-banner.bad .status-sub { color: #991b1b; }
+
+.primary-banner.warn {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+.primary-banner.warn .primary-banner-icon { background: #fef3c7; }
+.primary-banner.warn .primary-banner-status { color: #b45309; }
+.primary-banner.warn .status-sub { color: #78350f; }
+
+@keyframes pulse-ring {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: .75; }
+}
+
 /* Panels */
 .panel { background: var(--clr-panel); border: 1px solid var(--clr-border); border-radius: 18px; padding: 22px; margin-bottom: 14px; box-shadow: 0 4px 18px rgba(15,23,42,.05); }
 h1 { font-size: 1.35rem; margin-bottom: 8px; }
@@ -245,6 +383,9 @@ body.loading { cursor: progress; }
   .controls { display: grid; grid-template-columns: 1fr; }
   .quick-status { justify-self: center; font-size: 1.8rem; padding: 4px 0; }
   .grid { grid-template-columns: 1fr 1fr; }
+  .primary-banner { flex-direction: column; align-items: stretch; }
+  .primary-banner-actions { width: 100%; }
+  .btn-banner { width: 100%; text-align: center; }
   .ping-table { font-size: .84rem; }
   .ping-bar-cell { display: none; }
   .custom-target-box { flex-direction: column; }
@@ -293,6 +434,25 @@ body.loading { cursor: progress; }
   <div class="app-header">
     <div class="badge" style="margin-bottom:0">🌐 سامانه بررسی اختلال شبکه و VPN</div>
     <button class="logout-btn" id="logoutBtn" type="button" title="خروج و قفل‌کردن مجدد برنامه">🔒 خروج</button>
+  </div>
+
+  <!-- ── TOP HERO BANNER: Primary Target Direct Connection ── -->
+  <div id="primaryConnectionBanner" class="primary-banner untested">
+    <div class="primary-banner-body">
+      <div class="primary-banner-icon" id="primaryBannerIcon">⚪</div>
+      <div class="primary-banner-content">
+        <div class="primary-banner-header">
+          <span class="primary-banner-label">اتصال مستقیم به سرور اصلی:</span>
+          <code id="primaryBannerHost" class="primary-banner-host">panel.*</code>
+        </div>
+        <div id="primaryBannerStatus" class="primary-banner-status">
+          <span class="status-text">در انتظار تست اتصال مستقیم…</span>
+        </div>
+      </div>
+    </div>
+    <div class="primary-banner-actions">
+      <button class="btn-banner" id="primaryBannerTestBtn" type="button">⚡ تست اتصال</button>
+    </div>
   </div>
 
   <!-- ── SECTION 1: IP Check ── -->
@@ -507,6 +667,7 @@ function unlockApp() {
     syncSavedPanelDomain();
     loadBuiltinData();
     renderPingRows(PING_TARGETS);
+    checkPrimaryConnection();
     inspectIP('', true);
   }
 }
@@ -555,6 +716,67 @@ $('generateHashBtn').addEventListener('click', () => {
   resBox.classList.remove('hidden');
 });
 
+/* ─── PRIMARY TARGET BANNER LOGIC ─── */
+
+function updatePrimaryBanner(res) {
+  const banner = $('primaryConnectionBanner');
+  const icon = $('primaryBannerIcon');
+  const hostEl = $('primaryBannerHost');
+  const statusEl = $('primaryBannerStatus');
+
+  hostEl.textContent = res.host;
+
+  if (res.error === 'not_configured' || res.host.includes('*')) {
+    banner.className = 'primary-banner warn';
+    icon.textContent = '⚙️';
+    statusEl.innerHTML = `<span class="status-text" style="cursor:pointer" title="کلیک برای تنظیم دامنه">نیاز به تنظیم دامنه</span> <span class="status-sub">(دامنه را در کادر تنظیمات پنل در پایین وارد کنید)</span>`;
+    return;
+  }
+
+  if (res.reachable) {
+    banner.className = 'primary-banner good';
+    icon.textContent = '✅';
+    const speedLabel = res.ms < 150 ? 'عالی و سریع' : (res.ms < 350 ? 'پاسخ عادی' : 'کند');
+    statusEl.innerHTML = `<span class="status-text">اتصال موفق</span> <span class="status-sub">(${res.ms} میلی‌ثانیه — ${speedLabel})</span>`;
+  } else {
+    banner.className = 'primary-banner bad';
+    icon.textContent = '❌';
+    const failReason = res.error === 'timeout' ? 'تایم‌اوت / بی‌پاسخ' : (res.statusText || 'مسدود یا قطع ارتباط');
+    statusEl.innerHTML = `<span class="status-text">اتصال ناموفق</span> <span class="status-sub">(${failReason})</span>`;
+  }
+}
+
+async function checkPrimaryConnection() {
+  const host = PING_TARGETS[0]?.host || 'panel.*';
+  const banner = $('primaryConnectionBanner');
+  const icon = $('primaryBannerIcon');
+  const hostEl = $('primaryBannerHost');
+  const statusEl = $('primaryBannerStatus');
+  const btn = $('primaryBannerTestBtn');
+
+  hostEl.textContent = host;
+
+  if (host === 'panel.*' || host.includes('*')) {
+    updatePrimaryBanner({ host, reachable: false, error: 'not_configured' });
+    return;
+  }
+
+  banner.className = 'primary-banner checking';
+  icon.textContent = '🔄';
+  statusEl.innerHTML = `<span class="status-text">در حال تست اتصال مستقیم…</span> <span class="status-sub">ارسال پکت از دستگاه</span>`;
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await pingFromBrowser(host);
+    updatePrimaryBanner(res);
+    updatePingRow(res);
+  } catch (err) {
+    updatePrimaryBanner({ host, reachable: false, ms: null, statusText: 'خطا در ارتباط' });
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 /* ─── PANEL.* DOMAIN CONFIGURATION & PERSISTENCE ─── */
 
 function syncSavedPanelDomain() {
@@ -565,6 +787,11 @@ function syncSavedPanelDomain() {
     PING_TARGETS[0].host = 'panel.' + clean;
     PING_TARGETS[0].label = '⭐ سرور اصلی پنل اختصاصی شما';
   }
+  const currentHost = PING_TARGETS[0]?.host || 'panel.*';
+  $('primaryBannerHost').textContent = currentHost;
+  if (currentHost.includes('*')) {
+    updatePrimaryBanner({ host: currentHost, reachable: false, error: 'not_configured' });
+  }
 }
 
 function savePanelDomain() {
@@ -574,13 +801,23 @@ function savePanelDomain() {
   localStorage.setItem('vpn_panel_suffix', clean);
   PING_TARGETS[0].host = 'panel.' + clean;
   PING_TARGETS[0].label = '⭐ سرور اصلی پنل اختصاصی شما';
+  $('primaryBannerHost').textContent = PING_TARGETS[0].host;
   renderPingRows(PING_TARGETS);
   $('panelDomainNotice').classList.remove('hidden');
   setTimeout(() => $('panelDomainNotice').classList.add('hidden'), 3500);
+  checkPrimaryConnection();
 }
 
 $('savePanelDomainBtn').addEventListener('click', savePanelDomain);
 $('panelSuffixInput').addEventListener('keydown', e => { if (e.key === 'Enter') savePanelDomain(); });
+$('primaryBannerTestBtn').addEventListener('click', checkPrimaryConnection);
+$('primaryBannerStatus').addEventListener('click', () => {
+  const host = PING_TARGETS[0]?.host || 'panel.*';
+  if (host.includes('*')) {
+    $('panelSuffixInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('panelSuffixInput').focus();
+  }
+});
 
 /* ─── BGP & NETWORK LOGIC ─── */
 
@@ -1040,7 +1277,10 @@ async function runPing() {
     $('pingStatus').textContent = 'در حال استعلام از سرور ابری Cloudflare…';
     try {
       const results = await pingFromWorker(PING_TARGETS);
-      for (const r of results) updatePingRow(r);
+      for (const r of results) {
+        updatePingRow(r);
+        if (r.primary || r.isCustomPanel) updatePrimaryBanner(r);
+      }
       $('pingStatus').textContent = 'تست از سرور ابری با موفقیت انجام شد.';
       generatePingInsights(results);
     } catch (err) {
@@ -1061,6 +1301,9 @@ async function runPing() {
     res.isCustomPanel = t.isCustomPanel;
     results.push(res);
     updatePingRow(res);
+    if (t.primary || t.isCustomPanel) {
+      updatePrimaryBanner(res);
+    }
   }));
 
   $('pingStatus').textContent = 'تست مستقیم از دستگاه شما کامل شد.';
@@ -1144,7 +1387,10 @@ $('ipInput').addEventListener('input', () => {
 });
 
 /* ─── EVENT LISTENERS ─── */
-$('refreshBtn').addEventListener('click', () => inspectIP('', true));
+$('refreshBtn').addEventListener('click', () => {
+  inspectIP('', true);
+  checkPrimaryConnection();
+});
 $('checkBtn').addEventListener('click', () => inspectIP($('ipInput').value, false));
 $('ipInput').addEventListener('keydown', e => { if (e.key === 'Enter') inspectIP($('ipInput').value, false); });
 $('pingBtn').addEventListener('click', runPing);
