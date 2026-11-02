@@ -466,7 +466,7 @@ body.loading { cursor: progress; }
       <button class="btn secondary" id="checkBtn" type="button">بررسی همین IP</button>
       <span class="quick-status" id="topStatusIndicator" title="وضعیت">🔘</span>
     </div>
-    <p class="small">شناسایی خودکار با مکانیزم Fallback از چندین سرور مستقل (از جمله ipify، ipinfo.now، icanhazip و my-ip) انجام می‌شود تا در صورت فیلتر بودن یک سرویس، برنامه متوقف نشود.</p>
+    <p class="small">شناسایی خودکار با مکانیزم Fallback از سرورهای معتبر بدون خطای گیت‌وی (icanhazip، api64.ipify و ipwho.is) انجام می‌شود تا IP واقعی کلاینت دقیق تشخیص داده شود.</p>
   </section>
 
   <!-- ── SECTION 2: BGP Result ── -->
@@ -1037,12 +1037,11 @@ async function fetchWithTimeout(url, ms = 3500) {
 
 async function getPublicIP() {
   const eps = [
-    { url: 'https://api.ipify.org?format=json',  parse: r => r.json().then(d => d.ip) },
-    { url: 'https://api4.my-ip.io/v2/ip.json',   parse: r => r.json().then(d => d.ip) },
-    { url: 'https://ipinfo.now/json',            parse: r => r.json().then(d => d.ip_addr || d.ip) },
-    { url: 'https://ipv4.icanhazip.com/',        parse: r => r.text().then(t => t.trim()) },
-    { url: 'https://ipwho.is/',                  parse: r => r.json().then(d => d.ip) },
-    { url: 'https://api.myip.com',               parse: r => r.json().then(d => d.ip) },
+    { url: 'https://ipv4.icanhazip.com/',         parse: r => r.text().then(t => t.trim()) },
+    { url: 'https://api64.ipify.org?format=json', parse: r => r.json().then(d => d.ip) },
+    { url: 'https://ipwho.is/',                   parse: r => r.json().then(d => d.ip) },
+    { url: 'https://api64.ipify.org/',            parse: r => r.text().then(t => t.trim()) },
+    { url: 'https://api.seeip.org/jsonip',        parse: r => r.json().then(d => d.ip) },
   ];
   for (const ep of eps) {
     try {
@@ -1057,12 +1056,27 @@ async function getPublicIP() {
 }
 
 async function getASN(ip) {
+  // 1) استعلام رسمی از RIPE Stat
   try {
-    const r = await fetchWithTimeout(`https://stat.ripe.net/data/network-info/data.json?resource=${encodeURIComponent(ip)}&sourceapp=vpn_ip_checker`, 4000);
-    if (!r.ok) return [];
-    const d = (await r.json()).data || {};
-    return Array.isArray(d.asns) ? d.asns.map(a => String(a).match(/\d+/)?.[0]).filter(Boolean) : [];
-  } catch { return []; }
+    const r = await fetchWithTimeout(`https://stat.ripe.net/data/network-info/data.json?resource=${encodeURIComponent(ip)}&sourceapp=vpn_ip_checker`, 3500);
+    if (r.ok) {
+      const d = (await r.json()).data || {};
+      const asns = Array.isArray(d.asns) ? d.asns.map(a => String(a).match(/\d+/)?.[0]).filter(Boolean) : [];
+      if (asns.length) return asns;
+    }
+  } catch {}
+
+  // 2) Fallback به ipwho.is (تست‌شده و باز در ایران)
+  try {
+    const r = await fetchWithTimeout(`https://ipwho.is/${encodeURIComponent(ip)}`, 3500);
+    if (r.ok) {
+      const d = await r.json();
+      const asnNum = d?.connection?.asn ? String(d.connection.asn).match(/\d+/)?.[0] : null;
+      if (asnNum) return [asnNum];
+    }
+  } catch {}
+
+  return [];
 }
 
 async function inspectIP(ip, autodetect = false) {
